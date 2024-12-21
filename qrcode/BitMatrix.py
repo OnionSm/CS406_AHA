@@ -1,5 +1,8 @@
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 import numpy as np
-import BitArray
+from .BitArray import BitArray
 
 class BitMatrix:
     """
@@ -16,23 +19,41 @@ class BitMatrix:
         - *args == 4 : width, height, row_size, bit 
 
         Hàm này nhận vào số lượng đối số không dự đoán trước 
-        Sử dụng tương tự như overloading ở trong java
+        Sử dụng tương tự như overloading ở trong Java
         """
         if len(args) == 1:
+            # Nếu chỉ có 1 tham số, gán cả width và height
             self.width = self.height = args[0]
+            self.row_size = (self.width + 31) // 32
+            self.bits = np.zeros((self.height, self.width), dtype=int)
+        
         elif len(args) == 2:
+            # Nếu có 2 tham số, gán width và height
             self.width, self.height = args
+            self.row_size = (self.width + 31) // 32
+            self.bits = np.zeros((self.height, self.width), dtype=int)
+        
+        elif len(args) == 4:
+            # Nếu có 4 tham số, gán width, height, row_size và bits
+            self.width, self.height, self.row_size, bit = args
+            if self.row_size < 1 or self.width < 1 or self.height < 1:
+                raise ValueError("All dimensions and row_size must be greater than 0")
+            self.bits = np.full((self.height, self.width), bit, dtype=int)
+        
         elif "width" in kwargs and "height" in kwargs:
+            # Nếu chiều rộng và chiều cao được truyền qua từ khóa
             self.width = kwargs["width"]
             self.height = kwargs["height"]
+            self.row_size = (self.width + 31) // 32
+            self.bits = np.zeros((self.height, self.width), dtype=int)
+        
         else:
             raise ValueError("Invalid arguments for BitMatrix initialization")
 
+        # Kiểm tra nếu chiều rộng hoặc chiều cao nhỏ hơn 1
         if self.width < 1 or self.height < 1:
             raise ValueError("Both dimensions must be greater than 0")
-        
-        self.row_size = (self.width + 31) // 32
-        self.bits = np.zeros((self.height, self.width), dtype=int)
+
 
     @staticmethod
     def parse(image):
@@ -119,49 +140,45 @@ class BitMatrix:
         """
         Trả về giá trị bit tại vị trí (x, y) trong ma trận.
         """
-        offset = y * self.row_size + (x // 32)
-        return (self.bits[offset] >> (x & 0x1f)) & 1
+        return self.bits[y, x]
 
     def set(self, x, y):
         """
         Đặt bit tại vị trí (x, y) thành true (1).
         """
-        offset = y * self.row_size + (x // 32)
-        self.bits[offset] |= 1 << (x & 0x1f)
+        self.bits[y, x] = 1
 
     def unset(self, x, y):
         """
         Đặt bit tại vị trí (x, y) thành false (0).
         """
-        offset = y * self.row_size + (x // 32)
-        self.bits[offset] &= ~(1 << (x & 0x1f))
+        self.bits[y, x] = 0
 
     def flip(self, x, y):
         """
         Đảo ngược giá trị bit tại vị trí (x, y).
         """
-        offset = y * self.row_size + (x // 32)
-        self.bits[offset] ^= 1 << (x & 0x1f)
+        # Sử dụng toán tử XOR để đảo ngược bit tại vị trí (x, y)
+        self.bits[y, x] ^= 1  # XOR với 1 để đảo ngược bit (0 -> 1, 1 -> 0)
 
     def flip_all(self):
         """
         Đảo ngược mọi bit trong ma trận.
         """
-        for i in range(len(self.bits)):
-            self.bits[i] = ~self.bits[i]
+        # Đảo ngược tất cả các bit trong ma trận
+        self.bits = np.bitwise_not(self.bits)  # Dùng toán tử ~ để đảo ngược các bit
 
     def xor(self, mask):
         """
         Thực hiện phép XOR giữa ma trận này và một ma trận khác.
         """
+        # Kiểm tra kích thước ma trận có khớp không
         if self.width != mask.width or self.height != mask.height or self.row_size != mask.row_size:
             raise ValueError("input matrix dimensions do not match")
 
-        for y in range(self.height):
-            offset = y * self.row_size
-            for x in range(self.row_size):
-                self.bits[offset + x] ^= mask.bits[offset + x]
-
+        # Thực hiện phép XOR giữa từng phần tử trong ma trận
+        self.bits ^= mask.bits
+        
     def clear(self):
         """
         Xóa tất cả các bit (đặt tất cả các bit thành false).
@@ -281,73 +298,42 @@ class BitMatrix:
     def rotate90(self):
         """
         Xoay ma trận bit 90 độ theo chiều ngược kim đồng hồ.
-
-        Tham số đầu vào:
-        - Không có tham số đầu vào.
-
-        Hành vi:
-        - Một ma trận mới được tạo ra với chiều rộng và chiều cao hoán đổi cho nhau.
-        - Các bit từ ma trận gốc được gán vào vị trí mới sau khi xoay 90 độ ngược kim đồng hồ.
-        
-        Thay đổi:
-        - Ma trận hiện tại sẽ được thay đổi để đại diện cho ma trận bit xoay 90 độ.
         """
-        new_width = self.height
-        new_height = self.width
-        new_row_size = (new_width + 31) // 32
-        new_bits = [0] * (new_row_size * new_height)
+        # Sử dụng numpy để xoay ma trận 90 độ
+        self.bits = np.rot90(self.bits, k=1)  # k=1 xoay 90 độ ngược kim đồng hồ
 
-        for y in range(self.height):
-            for x in range(self.width):
-                offset = y * self.row_size + (x // 32)
-                if (self.bits[offset] >> (x % 32)) & 1 != 0:
-                    new_offset = (new_height - 1 - x) * new_row_size + (y // 32)
-                    new_bits[new_offset] |= 1 << (y % 32)
+        # Cập nhật chiều cao và chiều rộng sau khi xoay
+        self.height, self.width = self.bits.shape
 
-        self.width = new_width
-        self.height = new_height
-        self.row_size = new_row_size
-        self.bits = new_bits
     def get_enclosing_rectangle(self):
         """
         Tìm và trả về hình chữ nhật bao quanh ma trận bit, được xác định bởi các điểm 
         có bit '1'. Nếu ma trận là trắng (chỉ chứa bit '0'), trả về None.
 
         Trả về:
-        - list[int] : [left, top, width, height] đại diện cho hình chữ nhật bao quanh,
-          hoặc None nếu không tìm thấy bit '1'.
+        - list[int]: [left, top, width, height] đại diện cho hình chữ nhật bao quanh,
+        hoặc None nếu không tìm thấy bit '1'.
         """
-        left = self.width
-        top = self.height
-        right = -1
-        bottom = -1
+        # Tìm các vị trí (y, x) của bit '1' trong ma trận
+        positions = np.argwhere(self.bits == 1)
 
-        for y in range(self.height):
-            for x32 in range(self.row_size):
-                the_bits = self.bits[y * self.row_size + x32]
-                if the_bits != 0:
-                    if y < top:
-                        top = y
-                    if y > bottom:
-                        bottom = y
-                    if x32 * 32 < left:
-                        bit = 0
-                        while (the_bits << (31 - bit)) == 0:
-                            bit += 1
-                        if (x32 * 32 + bit) < left:
-                            left = x32 * 32 + bit
-                    if x32 * 32 + 31 > right:
-                        bit = 31
-                        while (the_bits >> bit) == 0:
-                            bit -= 1
-                        if (x32 * 32 + bit) > right:
-                            right = x32 * 32 + bit
-
-        if right < left or bottom < top:
+        # Nếu không tìm thấy bất kỳ bit '1' nào, trả về None
+        if positions.size == 0:
             return None
 
-        return [left, top, right - left + 1, bottom - top + 1]
+        # Xác định tọa độ bao quanh
+        top = np.min(positions[:, 0])    # Dòng trên cùng
+        bottom = np.max(positions[:, 0])  # Dòng dưới cùng
+        left = np.min(positions[:, 1])   # Cột bên trái
+        right = np.max(positions[:, 1])  # Cột bên phải
 
+        # Tính chiều rộng và chiều cao
+        width = right - left + 1
+        height = bottom - top + 1
+
+        return [left, top, width, height]
+    
+    
     def get_top_left_on_bit(self):
         """
         Tìm và trả về tọa độ x, y của bit '1' ở góc trên bên trái của ma trận. 

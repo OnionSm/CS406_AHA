@@ -1,3 +1,6 @@
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 class BitArray:
     EMPTY_BITS = []
     LOAD_FACTOR = 0.75

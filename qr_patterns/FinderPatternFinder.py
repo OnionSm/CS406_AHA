@@ -1,7 +1,11 @@
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 import functools
-import FinderPattern
-import ResultPoint
-import FinderPatternInfo
+import math
+from .FinderPattern import FinderPattern
+from .ResultPoint import ResultPoint
+from .FinderPatternInfo import FinderPatternInfo
 from enums import DecodeHintType
 
 class EstimatedModuleComparator:
@@ -63,8 +67,8 @@ class FinderPatternFinder:
 
     def find(self, hints):
         try_harder = hints is not None and DecodeHintType.TRY_HARDER in hints
-        height = self.image.shape[0]  
-        width = self.image.shape[1]
+        height = self.image.height  
+        width = self.image.width
 
         # Chúng ta đang tìm kiếm các mô-đun black/white/black/white/black trong tỷ lệ 1:1:3:1:1
         # Điều này theo dõi số lượng các mô-đun này đã thấy cho đến nay.
@@ -86,13 +90,14 @@ class FinderPatternFinder:
         while i < height and not done:
             current_state = 0
             for j in range(0, width):
-                if self.image[i][j] == 0: # black pixel
+                if self.image.bits[i][j] == 0: # black pixel
                     if current_state % 2 == 1: # current state is white
                         current_state += 1
                     state_count[current_state] += 1
                 else: # white pixel
                     if current_state % 2 == 0: # current is black state
-                        if current_state == 4: # current state is the last state
+                        if current_state == 4:
+                            print("Have full state") # current state is the last state
                             if self.found_pattern_cross(state_count): # maybe finder pattern
                                 confirmed = self.handle_possible_center(state_count,i,j)
                                 if confirmed: # is finder pattern
@@ -149,7 +154,14 @@ class FinderPatternFinder:
             return False
         module_size = total_module_size / 7.0
         max_variance = module_size / 2.0 
+        print(state_count)
         # Allow less than 50% variance from 1-1-3-1-1 proportions
+        print( abs(module_size - state_count[0]) < max_variance and
+        abs(module_size - state_count[1]) < max_variance and
+        abs(3.0 * module_size - state_count[2]) < 3 * max_variance and
+        abs(module_size - state_count[3]) < max_variance and
+        abs(module_size - state_count[4]) < max_variance)
+
         return (
         abs(module_size - state_count[0]) < max_variance and
         abs(module_size - state_count[1]) < max_variance and
@@ -163,22 +175,24 @@ class FinderPatternFinder:
         return (end - state_count[4] - state_count[3]) - state_count[2] / 2.0
     
     def cross_check_vertical(self,start_y, center_x, max_count, original_state_count_total):
-        height = self.image.shape[0]
+        height = self.image.height
         state_count = [0 for i in range(5)]
         y = start_y
-
+        center_x = int(center_x)
+        
         # start count up from start_y in center_x column 
-        while y >= 0 and self.image[y][center_x] == 0: # count black
+        while y >= 0 and self.image.bits[y][center_x] == 0: # count black
+
             state_count[2] += 1
             y -= 1
         if y < 0:
             return float('nan')
-        while y >= 0 and self.image[y][center_x] == 1 and state_count[1] <= max_count: # count white
+        while y >= 0 and self.image.bits[y][center_x] == 1 and state_count[1] <= max_count: # count white
             state_count[1] += 1
             y -= 1
         if y < 0 or state_count[1] > max_count:
             return float('nan')
-        while y >= 0 and self.image[y][center_x] == 0 and state_count[0] <= max_count:  # count black
+        while y >= 0 and self.image.bits[y][center_x] == 0 and state_count[0] <= max_count:  # count black
             state_count[0] += 1
             y -= 1
         if state_count[0] > max_count:
@@ -186,17 +200,17 @@ class FinderPatternFinder:
         
         # start count down from start_y + 1 in center_x column
         y = start_y + 1
-        while y < height and self.image[y][center_x] == 0: # count black
+        while y < height and self.image.bits[y][center_x] == 0: # count black
             state_count[2] += 1
             y += 1
         if y == height:
             return float('nan')
-        while y < height and not self.image[y][center_x] == 1 and state_count[3] < max_count: # count white
+        while y < height and not self.image.bits[y][center_x] == 1 and state_count[3] < max_count: # count white
             state_count[3] += 1
             y += 1
         if y == height or state_count[3] >= max_count:
             return float('nan')
-        while y < height and self.image[y][center_x] == 0 and state_count[4] < max_count: # count black
+        while y < height and self.image.bits[y][center_x] == 0 and state_count[4] < max_count: # count black
             state_count[4] += 1
             y += 1
         if state_count[4] >= max_count:
@@ -212,22 +226,23 @@ class FinderPatternFinder:
 
 
     def cross_check_horizontal(self,center_x, center_y, max_count, original_state_count_total):
-        width = self.image.shape[1]
+        width = self.image.bits.shape[1]
         state_count = [0 for i in range(5)]
-        x = center_x
+        x = int(center_x)
+        center_y = int(center_y)
 
         # start count left from center_x in center_y row 
-        while x >= 0 and self.image[center_y][x] == 0: # count black
+        while x >= 0 and self.image.bits[center_y][x] == 0: # count black
             state_count[2] += 1
             x -= 1
         if x < 0:
             return float('nan')
-        while x >= 0 and self.image[center_y][x] == 1 and state_count[1] <= max_count: # count white
+        while x >= 0 and self.image.bits[center_y][x] == 1 and state_count[1] <= max_count: # count white
             state_count[1] += 1
             x -= 1
         if x < 0 or state_count[1] > max_count:
             return float('nan')
-        while x >= 0 and self.image[center_y][x] == 0 and state_count[0] <= max_count: # count black
+        while x >= 0 and self.image.bits[center_y][x] == 0 and state_count[0] <= max_count: # count black
             state_count[0] += 1
             x -= 1
         if state_count[0] > max_count:
@@ -235,17 +250,17 @@ class FinderPatternFinder:
         
         # start count right from center_y + 1 in center_y row
         x = center_x + 1
-        while x < width and self.image[center_y][x] == 0: # count black
+        while x < width and self.image.bits[center_y][x] == 0: # count black
             state_count[2] += 1
             x += 1
         if x == width:
             return float('nan')
-        while x < width and self.image[center_y][x] == 1 and state_count[3] < max_count: # count white
+        while x < width and self.image.bits[center_y][x] == 1 and state_count[3] < max_count: # count white
             state_count[3] += 1
             x += 1
         if x == width or state_count[3] >= max_count:
             return float('nan')
-        while x < width and self.image[center_y][x] == 0 and state_count[4] < max_count: # count black
+        while x < width and self.image.bits[center_y][x] == 0 and state_count[4] < max_count: # count black
             state_count[4] += 1
             x += 1
         if state_count[4] >= max_count:
@@ -265,35 +280,35 @@ class FinderPatternFinder:
         
         # Start counting up, left from center 
         i = 0 
-        while center_y >= i and center_x >= i and self.image[center_y - i][center_x - i] == 0: # count black
+        while center_y >= i and center_x >= i and self.image.bits[center_y - i][center_x - i] == 0: # count black
             state_count[2] += 1
             i += 1
         if state_count[2] == 0:
             return False
-        while center_y >= i and center_x >= i and self.image[center_y - i][center_x - i] == 1: # count white
+        while center_y >= i and center_x >= i and self.image.bits[center_y - i][center_x - i] == 1: # count white
             state_count[1] += 1
             i += 1
         if state_count[1] == 0:
             return False
-        while center_y >= i and center_x >= i and self.image[center_y - i][center_x - 1] == 0: # count black
+        while center_y >= i and center_x >= i and self.image.bits[center_y - i][center_x - 1] == 0: # count black
             state_count[0] += 1
             i += 1
         if state_count[0] == 0:
             return False
 
         # Count down, right from center
-        width = self.image.shape[1]
-        height = self.image.shape[0]
+        width = self.image.bits.shape[1]
+        height = self.image.bits.shape[0]
         i = 1
-        while center_y + i < height and center_x + i < width and self.image[center_y + i][center_x + i] == 0: # count black
+        while center_y + i < height and center_x + i < width and self.image.bits[center_y + i][center_x + i] == 0: # count black
             state_count[2] += 1
             i += 1
-        while center_y + i < height and center_x + i < width and self.image[center_y + i][center_x + i] == 1: # count white
+        while center_y + i < height and center_x + i < width and self.image.bits[center_y + i][center_x + i] == 1: # count white
             state_count[3] += 1
             i += 1
         if state_count[3] == 0:
             return False
-        while center_y + i < height and center_x + i < width and self.image[center_y + i][center_x + i] == 0: # count black
+        while center_y + i < height and center_x + i < width and self.image.bits[center_y + i][center_x + i] == 0: # count black
             state_count[4] += 1
             i += 1
         if state_count[4] == 0:
@@ -332,10 +347,10 @@ class FinderPatternFinder:
         state_count_total = sum(state_count)
         center_width = self.center_from_end(state_count, j)
         center_height = self.cross_check_vertical(i, center_width, state_count[2], state_count_total)
-        if center_height != float('nan'):
+        if not math.isnan(center_height):
             # re-cross check 
             center_width = self.cross_check_horizontal(center_width, center_height, state_count[2], state_count_total)
-            if center_width != float('nan'):
+            if not math.isnan(center_width):
                 if self.cross_check_diagonal(center_height, center_width):
                     estimated_module_size = state_count_total / 7.0
                     found = False
@@ -416,6 +431,7 @@ class FinderPatternFinder:
     
     def select_best_pattern(self):
         start_size = len(self.possible_centers)
+        print(start_size)
         if start_size < 3:
             raise ValueError("Not enough finder patterns found")
         
