@@ -18,12 +18,12 @@ class GlobalHistogramBinarizer(Binarizer):
         self.luminances = np.array([], dtype=np.uint8)
         self.buckets = np.zeros(self.LUMINANCE_BUCKETS, dtype=int)
 
-    def get_black_row(self, y, row):
+    def get_black_row(self, y: int , row: BitArray):
         """
         Trích xuất và nhị phân hóa một dòng trong ảnh.
         """
-        source = self.get_luminance_source()
-        width = source.get_width()
+        source: LuminanceSource = self.get_luminance_source()
+        width: int = source.get_width()
 
         if row is None or row.get_size() < width:
             row = BitArray(width)

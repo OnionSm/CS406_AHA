@@ -89,6 +89,7 @@ class LuminanceSource(ABC):
 
         :return: Đối tượng đã được đảo ngược.
         """
+        from .InvertedLuminanceSource import InvertedLuminanceSource
         return InvertedLuminanceSource(self)
 
     def rotate_counter_clockwise(self):
@@ -137,37 +138,3 @@ class LuminanceSource(ABC):
                     line.append(' ')
             result.append(''.join(line))
         return '\n'.join(result)
-
-class InvertedLuminanceSource(LuminanceSource):
-    """
-    Lớp bao bọc (`wrapper`) để đảo ngược giá trị độ chói từ nguồn gốc.
-    """
-
-    def __init__(self, source):
-        """
-        Khởi tạo lớp với nguồn độ chói ban đầu.
-
-        :param source: Đối tượng LuminanceSource ban đầu.
-        """
-        super().__init__(source.width, source.height)
-        self._source = source
-
-    def get_row(self, y, row=None):
-        """
-        Lấy một hàng dữ liệu độ chói đã đảo ngược.
-
-        :param y: Chỉ số hàng, phải nằm trong [0, get_height()).
-        :param row: Mảng được cấp phát trước (tùy chọn).
-        :return: Mảng chứa dữ liệu độ chói đã đảo ngược.
-        """
-        original_row = self._source.get_row(y, row)
-        return [255 - value for value in original_row]
-
-    def get_matrix(self):
-        """
-        Lấy toàn bộ dữ liệu độ chói đã đảo ngược theo thứ tự dòng-chính.
-
-        :return: Mảng chứa dữ liệu độ chói đã đảo ngược.
-        """
-        original_matrix = self._source.get_matrix()
-        return [255 - value for value in original_matrix]

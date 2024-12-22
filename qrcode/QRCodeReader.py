@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from decoder import Decoder
 from enums import DecodeHintType, ResultMetadataType, BarcodeFormat
 from qr_patterns import Detector
-from qrcode import Result, QRCodeDecoderMetaData, BitMatrix
+from qrcode import Result, QRCodeDecoderMetaData, BitMatrix, BinaryBitmap
 from exceptions import NotFoundException
 
 class QRCodeReader:
@@ -67,7 +67,7 @@ class QRCodeReader:
     #     result.put_metadata(ResultMetadataType.SYMBOLOGY_IDENTIFIER, "]Q" + decoder_result.get_symbology_modifier())
     #     return result
 
-    def decode(self, image, hints=None):
+    def decode(self, image: BinaryBitmap, hints=None):
         """
         Phát hiện và giải mã QR code trong bức ảnh.
 
@@ -83,18 +83,17 @@ class QRCodeReader:
         decoder_result = None
         points = None
         if hints and DecodeHintType.PURE_BARCODE in hints:
-            bits = self.extract_pure_bits(image.get_black_matrix())
+            bits: BitMatrix = self.extract_pure_bits(image.get_black_matrix())
             decoder_result = self.decoder.decode(bits, hints)
             points = self.NO_POINTS
         else:
             print("Detect")
-            return image.get_black_matrix()
-            # detector_result = Detector(image.get_black_matrix()).detect(hints)
-            # decoder_result = self.decoder.decode(detector_result.get_bits(), hints)
-            # points = detector_result.get_points()
+            detector_result = Detector(image.get_black_matrix()).detect(hints)
+            print("______", decoder_result)
+            decoder_result = self.decoder.decode(detector_result.get_bits(), hints)
+            points = detector_result.get_points()
+            print("POINT", points)
             
-        print(points)
-
         # # Nếu mã bị đảo ngược, hoán đổi điểm dưới trái và trên phải
         # if isinstance(decoder_result.get_other(), QRCodeDecoderMetaData):
         #     decoder_result.get_other().apply_mirrored_correction(points)

@@ -6,3 +6,4 @@ from .CV2ImageLuminanceSource import CV2ImageLuminanceSource
 from .HybridBinarizer import HybridBinarizer
 from .GlobalHistogramBinarizer import GlobalHistogramBinarizer
 from .Binarizer import Binarizer
+from .InvertedLuminanceSource import InvertedLuminanceSource

@@ -6,14 +6,14 @@ from .DetectorResult import DetectorResult
 from .FinderPatternFinder import FinderPatternFinder
 from interfaces import ResultPointCallback
 from .ResultPoint import ResultPoint
-from qrcode import Version
+from qrcode import Version, BitMatrix
 from .AlignmentPattern import AlignmentPattern
 from .AlignmentPatternFinder import AlignmentPatternFinder
 from interfaces import ResultPointCallback
 from common import PerspectiveTransform
 from common import GridSampler
 from exceptions import FormatException, NotFoundException
-
+from .FinderPatternInfo import FinderPatternInfo
 
 
 from enums import DecodeHintType
@@ -30,7 +30,7 @@ class Detector():
         - image : BitMatrix
         - result_point_call_back : ResultPointCallBack
         """
-        self.image = image
+        self.image: BitMatrix = image
         self.result_point_callback = None
     
  
@@ -48,16 +48,17 @@ class Detector():
         else:
             self.result_point_callback = hints.get(DecodeHintType.NEED_RESULT_POINT_CALLBACK, None)
 
-        finder = FinderPatternFinder(self.image, self.result_point_callback)
-        info = finder.find(hints)
-        print(info)
-        # return self.process_finder_pattern_info(info)
+        finder: FinderPatternFinder = FinderPatternFinder(self.image, self.result_point_callback)
+        info: FinderPatternInfo = finder.find(hints)
+        return self.process_finder_pattern_info(info)
     
     def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
         top_left = info.get_top_left()
         top_right = info.get_top_right()
         bottom_left = info.get_bottom_left()
-
+        print("top_left", top_left)
+        print("top_right", top_right)
+        print("bottom_left", bottom_left)
         module_size = self.calculate_module_size(top_left, top_right, bottom_left)
         if module_size < 1.0:
             raise NotFoundException("Module size less than 1")
@@ -171,9 +172,13 @@ class Detector():
         và top_left với bottom_left sau đó lấy trung bình 2 khoảng cách và cộng thêm 7
         để ra số module của QR code
         """
+        print("Module size ", module_size )
         # Tính khoảng cách giữa các điểm và chia cho kích thước module
         tltr_centers_dimension = round(ResultPoint.distance(top_left, top_right) / module_size)
         tlbl_centers_dimension = round(ResultPoint.distance(top_left, bottom_left) / module_size)
+        print("tltr_centers_dimension", tltr_centers_dimension)
+        print("tlbl_centers_dimension", tlbl_centers_dimension)
+
         
         # Tính toán dimension
         dimension = ((tltr_centers_dimension + tlbl_centers_dimension) // 2) + 7
@@ -247,8 +252,8 @@ class Detector():
         nhất là trong trường hợp các điểm vượt ra ngoài rìa của ảnh hoặc khi đoạn đường 
         có thể đi qua các pixel biên của ảnh.
         """
-        width = self.image.shape[1]
-        height = self.image.shape[0]
+        width = self.image.get_width()
+        height = self.image.get_height()
         result = self.size_of_black_white_black_run(from_x, from_y, to_x, to_y)
         scale = 1.0 
         # Tính điểm other_to_x, bằng cách lấy đối xứng với to_x thông qua from_x

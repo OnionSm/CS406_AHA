@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from exceptions import NotFoundException
 from .BitArray import BitArray
 from .BitMatrix import BitMatrix
+from common import Binarizer
 
 class BinaryBitmap:
     """
@@ -11,7 +12,7 @@ class BinaryBitmap:
     Các đối tượng Reader chấp nhận một BinaryBitmap và cố gắng giải mã nó.
     """
 
-    def __init__(self, binarizer):
+    def __init__(self, binarizer : Binarizer):
         """
         Khởi tạo một đối tượng BinaryBitmap.
 
@@ -59,6 +60,7 @@ class BinaryBitmap:
         """
         if self.matrix is None:
             self.matrix = self.binarizer.get_black_matrix()
+        print("end get black matrix")
         return self.matrix
 
     def is_crop_supported(self) -> bool:
