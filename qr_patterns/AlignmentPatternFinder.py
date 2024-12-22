@@ -1,4 +1,7 @@
-import AlignmentPattern
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+from .AlignmentPattern import AlignmentPattern
 
 class AlignmentPatternFinder:
     def __init__(self, image, startX, startY, width, height, moduleSize, resultPointCallback=None):
