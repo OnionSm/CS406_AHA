@@ -2,138 +2,141 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from .AlignmentPattern import AlignmentPattern
-
+from qrcode import BitMatrix
 class AlignmentPatternFinder:
-    def __init__(self, image, startX, startY, width, height, moduleSize, resultPointCallback=None):
+    def __init__(self, image, start_x, start_y, width, height, module_size, result_point_callback=None):
         """
         Creates a finder that will look in a portion of the whole image.
         :param image: 2D list or similar structure representing the binary image.
-        :param startX: left column from which to start searching.
-        :param startY: top row from which to start searching.
+        :param start_x: left column from which to start searching.
+        :param start_y: top row from which to start searching.
         :param width: width of region to search.
         :param height: height of region to search.
-        :param moduleSize: estimated module size so far.
-        :param resultPointCallback: optional callback when a point is found.
+        :param module_size: estimated module size so far.
+        :param result_point_callback: optional callback when a point is found.
         """
-        self.image = image
+        self.image: BitMatrix = image
         self.possibleCenters = []
-        self.startX = startX
-        self.startY = startY
+        self.start_x = start_x
+        self.start_y = start_y
         self.width = width
         self.height = height
-        self.moduleSize = moduleSize
+        self.moduleSize = module_size
         self.crossCheckStateCount = [0, 0, 0]
-        self.resultPointCallback = resultPointCallback
+        self.resultPointCallback = result_point_callback
 
     def find(self):
-        startX = self.startX
+        start_x = self.start_x
         height = self.height
-        maxJ = startX + self.width
-        middleI = self.startY + height // 2
-        stateCount = [0, 0, 0]
+        max_j = start_x + self.width
+        middle_i = self.start_y + (height // 2)
+        state_count = [0, 0, 0]
+        print("start x:", start_x)
 
         for iGen in range(height):
-            i = middleI + ((iGen + 1) // 2 if iGen % 2 == 0 else -(iGen + 1) // 2)
-            stateCount = [0, 0, 0]
-            j = startX
+            i = middle_i + ((iGen & 0x01) == 0 and (iGen + 1) // 2 or -((iGen + 1) // 2))
+            state_count = [0, 0, 0]
+            j = start_x
 
             # Skip leading white pixels
-            while j < maxJ and not self.image[i][j]:
+            while j < max_j and not self.image.get(j,i):
                 j += 1
 
-            currentState = 0
-            while j < maxJ:
-                if self.image[i][j]:
-                    if currentState == 1:
-                        stateCount[1] += 1
+            current_state = 0
+            while j < max_j:
+                if self.image.get(j,i): # black pixel
+                    if current_state == 1:
+                        state_count[1] += 1
                     else:
-                        if currentState == 2:
-                            if self.foundPatternCross(stateCount):
-                                confirmed = self.handlePossibleCenter(stateCount, i, j)
-                                if confirmed:
+                        if current_state == 2: # have full state
+                            if self.found_pattern_cross(state_count):
+                                print("Aligment Found")
+                                confirmed = self.handle_possible_center(state_count, i, j)
+                                if confirmed is not None:
                                     return confirmed
-                            stateCount[0], stateCount[1] = stateCount[2], 1
-                            stateCount[2] = 0
-                            currentState = 1
+                            state_count[0], state_count[1] = state_count[2], 1
+                            state_count[2] = 0
+                            current_state = 1
                         else:
-                            stateCount[currentState] += 1
+                            current_state += 1
+                            state_count[current_state] += 1
                 else:
-                    if currentState == 1:
-                        currentState += 1
-                    stateCount[currentState] += 1
+                    if current_state == 1:
+                        current_state += 1
+                    state_count[current_state] += 1
                 j += 1
 
-            if self.foundPatternCross(stateCount):
-                confirmed = self.handlePossibleCenter(stateCount, i, maxJ)
+            if self.found_pattern_cross(state_count):
+                confirmed = self.handle_possible_center(state_count, i, max_j)
                 if confirmed:
                     return confirmed
-
-        if self.possibleCenters:
+        print("State", state_count)
+        if len(self.possibleCenters) > 0:
             return self.possibleCenters[0]
         raise ValueError("Not Found")
 
     @staticmethod
-    def centerFromEnd(stateCount, end):
-        return (end - stateCount[2]) - stateCount[1] / 2.0
+    def center_from_end(state_count, end):
+        return (end - state_count[2]) - state_count[1] / 2.0
 
-    def foundPatternCross(self, stateCount):
-        moduleSize = self.moduleSize
-        maxVariance = moduleSize / 2.0
-        return all(abs(moduleSize - count) < maxVariance for count in stateCount)
+    def found_pattern_cross(self, state_count):
+        module_size = self.moduleSize
+        max_variance = module_size / 2.0
+        return all(abs(module_size - count) < max_variance for count in state_count)
 
-    def crossCheckVertical(self, startI, centerJ, maxCount, originalStateCountTotal):
-        maxI = len(self.image)
-        stateCount = [0, 0, 0]
-        i = startI
+    def cross_check_vertical(self, start_i, center_j, max_count, original_state_count_total):
+        max_i = self.image.get_height()
+        state_count = [0, 0, 0]
+        i = start_i
 
-        while i >= 0 and self.image[i][centerJ] and stateCount[1] <= maxCount:
-            stateCount[1] += 1
+        while i >= 0 and self.image.get(center_j, i) and state_count[1] <= max_count:
+            state_count[1] += 1
             i -= 1
 
-        if i < 0 or stateCount[1] > maxCount:
+        if i < 0 or state_count[1] > max_count:
             return float('nan')
 
-        while i >= 0 and not self.image[i][centerJ] and stateCount[0] <= maxCount:
-            stateCount[0] += 1
+        while i >= 0 and not self.image.get(center_j, i) and state_count[0] <= max_count:
+            state_count[0] += 1
             i -= 1
 
-        if stateCount[0] > maxCount:
+        if state_count[0] > max_count:
             return float('nan')
 
-        i = startI + 1
-        while i < maxI and self.image[i][centerJ] and stateCount[1] <= maxCount:
-            stateCount[1] += 1
+        i = start_i + 1
+        while i < max_i and self.image.get(center_j, i) and state_count[1] <= max_count:
+            state_count[1] += 1
             i += 1
 
-        if i == maxI or stateCount[1] > maxCount:
+        if i == max_i or state_count[1] > max_count:
             return float('nan')
 
-        while i < maxI and not self.image[i][centerJ] and stateCount[2] <= maxCount:
-            stateCount[2] += 1
+        while i < max_i and not self.image.get(center_j, i) and state_count[2] <= max_count:
+            state_count[2] += 1
             i += 1
 
-        if stateCount[2] > maxCount:
+        if state_count[2] > max_count:
             return float('nan')
 
-        stateCountTotal = sum(stateCount)
-        if 5 * abs(stateCountTotal - originalStateCountTotal) >= 2 * originalStateCountTotal:
+        state_count_total = sum(state_count)
+        if 5 * abs(state_count_total - original_state_count_total) >= 2 * original_state_count_total:
             return float('nan')
 
-        return self.centerFromEnd(stateCount, i) if self.foundPatternCross(stateCount) else float('nan')
+        return self.center_from_end(state_count, i) if self.found_pattern_cross(state_count) else float('nan')
 
-    def handlePossibleCenter(self, stateCount, i, j):
-        stateCountTotal = sum(stateCount)
-        centerJ = self.centerFromEnd(stateCount, j)
-        centerI = self.crossCheckVertical(i, int(centerJ), 2 * stateCount[1], stateCountTotal)
-        if not (centerI != float('nan')):
+    def handle_possible_center(self, state_count, i, j):
+        state_count_total = sum(state_count)
+        center_j = self.center_from_end(state_count, j)
+        center_i = self.cross_check_vertical(i, int(center_j), 2 * state_count[1], state_count_total)
+        if not (center_i != float('nan')):
             return None
 
-        estimatedModuleSize = sum(stateCount) / 3.0
+        estimated_module_size = sum(state_count) / 3.0
         for center in self.possibleCenters:
-            if center.aboutEquals(estimatedModuleSize, centerI, centerJ):
-                return center.combineEstimate(centerI, centerJ, estimatedModuleSize)
-
-        point = AlignmentPattern(centerJ, centerI, estimatedModuleSize)
+            if center.aboutEquals(estimated_module_size, center_i, center_j):
+                return center.combineEstimate(center_i, center_j, estimated_module_size)
+        print("Aligment point", center_j, center_i, estimated_module_size)
+        point = AlignmentPattern(center_j, center_i, estimated_module_size)
         self.possibleCenters.append(point)
         if self.resultPointCallback:
             self.resultPointCallback(point)

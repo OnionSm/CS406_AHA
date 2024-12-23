@@ -9,7 +9,7 @@ from .ReedSolomonDecoder import ReedSolomonDecoder
 from enums import ErrorCorrectionLevel, DecodeHintType
 from .DecoderResult import DecoderResult
 from qrcode import QRCodeDecoderMetaData, BitMatrixParser
-
+import qrcode
 class ChecksumException(Exception):
     pass
 
@@ -66,6 +66,7 @@ class DecodedBitStreamParser:
 
 class Decoder:
     def __init__(self):
+        from qrcode.BitMatrixParser import BitMatrixParser
         self.rs_decoder = ReedSolomonDecoder(GenericGF.QR_CODE_FIELD_256)
 
     def decode(self, image: List[List[bool]], hints) -> DecoderResult:
@@ -73,7 +74,7 @@ class Decoder:
         return self._decode(bit_matrix, hints)
 
     def _decode(self, bits: BitMatrix, hints) -> DecoderResult:
-        parser = BitMatrixParser(bits)
+        parser = qrcode.BitMatrixParser(bits)
         try:
             return self._decode_with_parser(parser, hints)
         except (FormatException, ChecksumException) as e1:

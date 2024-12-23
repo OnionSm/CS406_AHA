@@ -10,7 +10,7 @@ from qrcode import Version, BitMatrix
 from .AlignmentPattern import AlignmentPattern
 from .AlignmentPatternFinder import AlignmentPatternFinder
 from interfaces import ResultPointCallback
-from common import PerspectiveTransform
+from common import PerspectiveTransform, DefaultGridSampler, GridSampler
 from common import GridSampler
 from exceptions import FormatException, NotFoundException
 from .FinderPatternInfo import FinderPatternInfo
@@ -18,7 +18,6 @@ from .FinderPattern import FinderPattern
 
 
 from enums import DecodeHintType
-
 
 
     
@@ -64,10 +63,11 @@ class Detector():
         top_right: FinderPattern = info.get_top_right()
         bottom_left: FinderPattern = info.get_bottom_left()
         module_size = self.calculate_module_size(top_left, top_right, bottom_left)
+        print("FINAL MODULE SIZE", module_size)
         if module_size < 1.0:
             raise NotFoundException("Module size less than 1")
         dimension: int = self.compute_dimension(top_left, top_right, bottom_left, module_size)
-        provisional_version = Version.getProvisionalVersionForDimension(dimension)
+        provisional_version = Version.VersionManager.get_provisional_version_for_dimension(dimension)
         module_between_fp_centers = provisional_version.get_dimension_for_version() - 7
         
         alignment_pattern = None 
@@ -93,7 +93,7 @@ class Detector():
                 except NotFoundException:
                     # Try next round
                     i <<= 1  # Equivalent to i *= 2
-        transform = Detector.create_transform(top_left, top_right, bottom_left, alignment_pattern, dimension)
+        transform: PerspectiveTransform = Detector.create_transform(top_left, top_right, bottom_left, alignment_pattern, dimension)
         bits = self.sample_grid(self.image, transform, dimension)
         if alignment_pattern is None:
             points = [bottom_left, top_left, top_right]
@@ -160,7 +160,8 @@ class Detector():
         - BitMatrix
         """
         try:
-            sampler = GridSampler.get_instance()
+            # sampler = GridSampler.get_instance()
+            sampler:GridSampler = DefaultGridSampler()
             return sampler.sample_grid(image, dimension, dimension, transform)
         except Exception as e:
             raise NotFoundException("Sample grid failed") from e
@@ -236,13 +237,15 @@ class Detector():
             trung bình của hai ước tính, chia cho 14, để phù hợp với cấu trúc của mẫu gồm nhiều module đen và trắng. 
             Phương pháp này giúp cải thiện độ chính xác trong việc tính toán kích thước module khi xem xét các góc độ khác nhau.
         """
+        print("point "  , pattern.get_x(), pattern.get_y() , other_pattern.get_x(), other_pattern.get_y())
         module_size_est_1 = self.size_of_black_white_black_run_both_ways(
             int(pattern.get_x()), int(pattern.get_y()), int(other_pattern.get_x()), int(other_pattern.get_y()))
         module_size_est_2 = self.size_of_black_white_black_run_both_ways(
             int(other_pattern.get_x()), int(other_pattern.get_y()), int(pattern.get_x()), int(pattern.get_y()))
-        if module_size_est_1 == float("nan"):
+        print(module_size_est_1, module_size_est_2)
+        if math.isnan(module_size_est_1):
             return module_size_est_2 / 7.0
-        if module_size_est_2 == float("nan"):
+        if math.isnan(module_size_est_2):
             return module_size_est_1 / 7.0
         return (module_size_est_1 + module_size_est_2) / 14.0
     
@@ -257,10 +260,8 @@ class Detector():
         nhất là trong trường hợp các điểm vượt ra ngoài rìa của ảnh hoặc khi đoạn đường 
         có thể đi qua các pixel biên của ảnh.
         """
-        width = self.image.get_width()
-        height = self.image.get_height()
         result = self.size_of_black_white_black_run(from_x, from_y, to_x, to_y)
-        print('Result',result)
+        print('Result -----',result)
         scale = 1.0 
         # Tính điểm other_to_x, bằng cách lấy đối xứng với to_x thông qua from_x
         # Other_to_x sẽ được giới hạn trong khoảng width
@@ -268,9 +269,9 @@ class Detector():
         if other_to_x < 0:
             scale = from_x / float(from_x - other_to_x)
             other_to_x = 0
-        elif other_to_x >= width:
-            scale = (width - 1 - from_x) / float(other_to_x - from_x)
-            other_to_x = width - 1
+        elif other_to_x >= self.image.get_width():
+            scale = (self.image.get_width() - 1 - from_x) / float(other_to_x - from_x)
+            other_to_x = self.image.get_width() - 1
 
         other_to_y = int(from_y - (to_y - from_y) * scale)
 
@@ -278,9 +279,9 @@ class Detector():
         if other_to_y < 0:
             scale = from_y / float(from_y - other_to_y)
             other_to_y = 0
-        elif other_to_y >= height:
-            scale = (height - 1 - from_y) / float(other_to_y - from_y)
-            other_to_y = height - 1
+        elif other_to_y >= self.image.get_height():
+            scale = (self.image.get_height() - 1 - from_y) / float(other_to_y - from_y)
+            other_to_y = self.image.get_height() - 1
         other_to_x = int( from_x + (other_to_x - from_x) * scale)
 
         result += self.size_of_black_white_black_run(from_x, from_y, other_to_x, other_to_y)
@@ -294,42 +295,39 @@ class Detector():
         nếu như tìm thấy đoạn black-white-black
         """
         print("From", from_x, from_y, to_x, to_y)
-         # Biến thể nhẹ của thuật toán Bresenham
+        # Biến thể nhẹ của thuật toán Bresenham
         steep = abs(to_y - from_y) > abs(to_x - from_x)
         if steep:
             from_x, from_y, to_x, to_y = from_y, from_x, to_y, to_x
-
         dx = abs(to_x - from_x)
         dy = abs(to_y - from_y)
         error = -dx // 2
         xstep = 1 if from_x < to_x else -1
         ystep = 1 if from_y < to_y else -1
 
-         # Trong các pixel đen, tìm kiếm pixel trắng lần đầu hoặc lần thứ hai
         state = 0
-        x_limit = to_x + xstep
+        x, y = from_x, from_y
 
-        for x, y in zip(range(from_x, x_limit, xstep), range(from_y, ystep)):
+        while x != to_x + xstep:
             real_x = y if steep else x
             real_y = x if steep else y
 
             # Kiểm tra nếu pixel hiện tại có thay đổi màu sắc (từ đen sang trắng hoặc ngược lại)
-            if (state == 1) == self.image[real_y][real_x]:
+            if (state == 1) == self.image.get(real_x, real_y):
                 if state == 2:
                     return math.dist((x, y), (from_x, from_y))
                 state += 1
-
             error += dy
             if error > 0:
                 if y == to_y:
                     break
                 y += ystep
                 error -= dx
-
+            x += xstep
         # Nếu tìm thấy đoạn black-white-black, trả về khoảng cách đến điểm cuối
         if state == 2:
             return math.dist((to_x + xstep, to_y), (from_x, from_y))
-
+        print("Nannnnnnn")
         # Nếu không tìm thấy đoạn black-white-black, trả về NaN
         return float('nan')
         
@@ -357,7 +355,11 @@ class Detector():
         
         if alignment_area_bottom_y - alignment_area_top_y < overall_est_module_size * 3:
             raise NotFoundException()
-
+        print("aligment_area_left_x", alignment_area_left_x)
+        print("aligment_area_top_y", alignment_area_top_y)
+        print("aligment_area_right_x", alignment_area_right_x)
+        print("aligment_area_bottom_y", alignment_area_bottom_y)
+        print("overall_est_module_size", overall_est_module_size)
         alignment_finder = AlignmentPatternFinder(
             self.image,
             alignment_area_left_x,
