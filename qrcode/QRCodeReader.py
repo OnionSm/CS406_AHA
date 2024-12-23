@@ -88,7 +88,7 @@ class QRCodeReader:
             points = self.NO_POINTS
         else:
             print("Detect")
-            detector_result = Detector(image.get_black_matrix()).detect(hints)
+            detector_result:Detector = Detector(image.get_black_matrix()).detect(hints)
             print("______", decoder_result)
             decoder_result = self.decoder.decode(detector_result.get_bits(), hints)
             points = detector_result.get_points()

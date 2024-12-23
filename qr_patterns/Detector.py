@@ -14,6 +14,7 @@ from common import PerspectiveTransform
 from common import GridSampler
 from exceptions import FormatException, NotFoundException
 from .FinderPatternInfo import FinderPatternInfo
+from .FinderPattern import FinderPattern
 
 
 from enums import DecodeHintType
@@ -50,19 +51,22 @@ class Detector():
 
         finder: FinderPatternFinder = FinderPatternFinder(self.image, self.result_point_callback)
         info: FinderPatternInfo = finder.find(hints)
-        return self.process_finder_pattern_info(info)
-    
-    def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
-        top_left = info.get_top_left()
-        top_right = info.get_top_right()
-        bottom_left = info.get_bottom_left()
+        top_left: FinderPattern = info.get_top_left()
+        top_right: FinderPattern = info.get_top_right()
+        bottom_left: FinderPattern = info.get_bottom_left()
         print("top_left", top_left)
         print("top_right", top_right)
         print("bottom_left", bottom_left)
+        return self.process_finder_pattern_info(info)
+    
+    def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
+        top_left: FinderPattern = info.get_top_left()
+        top_right: FinderPattern = info.get_top_right()
+        bottom_left: FinderPattern = info.get_bottom_left()
         module_size = self.calculate_module_size(top_left, top_right, bottom_left)
         if module_size < 1.0:
             raise NotFoundException("Module size less than 1")
-        dimension = self.compute_dimension(top_left, top_right, bottom_left, module_size)
+        dimension: int = self.compute_dimension(top_left, top_right, bottom_left, module_size)
         provisional_version = Version.getProvisionalVersionForDimension(dimension)
         module_between_fp_centers = provisional_version.get_dimension_for_version() - 7
         
@@ -99,8 +103,8 @@ class Detector():
         return DetectorResult(bits, points)
 
 
-    
-    def create_transform(self, top_left, top_right, bottom_left, alignment_pattern, dimension):
+    @staticmethod
+    def create_transform(top_left, top_right, bottom_left, alignment_pattern, dimension):
         """ 
         Input:
         - top_left: ResultPoint
@@ -114,7 +118,7 @@ class Detector():
         bottom_right_y = 0
         source_bottom_right_x = 0
         source_bottom_right_y = 0 
-        if alignment_pattern != None:
+        if alignment_pattern is not None:
             bottom_right_x =  alignment_pattern.get_x()
             bottom_right_y = alignment_pattern.get_y()
             source_bottom_right_x = dim_minus_three - 3.0
@@ -161,7 +165,8 @@ class Detector():
         except Exception as e:
             raise NotFoundException("Sample grid failed") from e
 
-    def compute_dimension(self, top_left, top_right, bottom_left, module_size):
+    @staticmethod
+    def compute_dimension(top_left, top_right, bottom_left, module_size):
         """
         Input: 
         - top_left, top_right, bottom_left : ResultPoint
@@ -188,7 +193,7 @@ class Detector():
         elif dimension % 4 == 2:
             dimension -= 1
         elif dimension % 4 == 3:
-            raise NotFoundException.get_not_found_instance()
+            raise NotFoundException()
         
         return dimension
 
@@ -211,7 +216,7 @@ class Detector():
                 self.calculate_module_size_one_way(top_left, bottom_left)) / 2.0
 
 
-    def calculate_module_size_one_way(self, pattern, other_pattern): 
+    def calculate_module_size_one_way(self, pattern: ResultPoint, other_pattern: ResultPoint): 
         """
         Đầu vào:
             pattern (ResultPoint): Một điểm đại diện cho vị trí đầu tiên trên hình ảnh hoặc mã vạch.
@@ -255,6 +260,7 @@ class Detector():
         width = self.image.get_width()
         height = self.image.get_height()
         result = self.size_of_black_white_black_run(from_x, from_y, to_x, to_y)
+        print('Result',result)
         scale = 1.0 
         # Tính điểm other_to_x, bằng cách lấy đối xứng với to_x thông qua from_x
         # Other_to_x sẽ được giới hạn trong khoảng width
@@ -287,6 +293,7 @@ class Detector():
         Hàm này được sử dụng để trả về khoảng cách của 2 điểm (from_x, from_y) và (to_x, to_y)
         nếu như tìm thấy đoạn black-white-black
         """
+        print("From", from_x, from_y, to_x, to_y)
          # Biến thể nhẹ của thuật toán Bresenham
         steep = abs(to_y - from_y) > abs(to_x - from_x)
         if steep:
@@ -340,16 +347,16 @@ class Detector():
         """
         allowance = int(allowance_factor * overall_est_module_size)
         alignment_area_left_x = max(0, est_alignment_x - allowance)
-        alignment_area_right_x = min(self.image.shape[1] - 1, est_alignment_x + allowance)
+        alignment_area_right_x = min(self.image.get_width() - 1, est_alignment_x + allowance)
         
         if alignment_area_right_x - alignment_area_left_x < overall_est_module_size * 3:
-            raise NotFoundException.get_not_found_instance()
+            raise NotFoundException()
 
         alignment_area_top_y = max(0, est_alignment_y - allowance)
-        alignment_area_bottom_y = min(self.image.shape[0] - 1, est_alignment_y + allowance)
+        alignment_area_bottom_y = min(self.image.get_height() - 1, est_alignment_y + allowance)
         
         if alignment_area_bottom_y - alignment_area_top_y < overall_est_module_size * 3:
-            raise NotFoundException.get_not_found_instance()
+            raise NotFoundException()
 
         alignment_finder = AlignmentPatternFinder(
             self.image,
