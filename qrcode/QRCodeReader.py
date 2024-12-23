@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from decoder import Decoder
 from enums import DecodeHintType, ResultMetadataType, BarcodeFormat
-from qr_patterns import Detector
+from qr_patterns import Detector, DetectorResult
 from qrcode import Result, QRCodeDecoderMetaData, BitMatrix, BinaryBitmap
 from exceptions import NotFoundException
 
@@ -88,16 +88,20 @@ class QRCodeReader:
             points = self.NO_POINTS
         else:
             print("Detect")
-            detector_result:Detector = Detector(image.get_black_matrix()).detect(hints)
-            print("______", decoder_result)
-            decoder_result = self.decoder.decode(detector_result.get_bits(), hints)
-            points = detector_result.get_points()
-            print("POINT", points)
+            detector_result:DetectorResult = Detector(image.get_black_matrix()).detect(hints)
+            print(detector_result.get_bits())
+            print(len(detector_result.get_bits().bits))
+            print(detector_result.get_bits().row_size)
+            print(detector_result.get_bits().height)
+            print(type(detector_result.get_bits().bits[0]))
+            # decoder_result = self.decoder._decode(detector_result.get_bits(), hints)
+            # points = detector_result.get_points()
+            # print("POINT", points)
             
         # # Nếu mã bị đảo ngược, hoán đổi điểm dưới trái và trên phải
         # if isinstance(decoder_result.get_other(), QRCodeDecoderMetaData):
         #     decoder_result.get_other().apply_mirrored_correction(points)
-
+        #
         # result = Result(decoder_result.get_text(), decoder_result.get_raw_bytes(), points, BarcodeFormat.QR_CODE)
         # byte_segments = decoder_result.get_byte_segments()
         # if byte_segments:

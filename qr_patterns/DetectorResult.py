@@ -5,25 +5,28 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 
 class DetectorResult:
+    """
+    Encapsulates the result of detecting a barcode in an image. This includes the raw
+    matrix of black/white pixels corresponding to the barcode, and possibly points of interest
+    in the image, like the location of finder patterns or corners of the barcode in the image.
+    """
+
     def __init__(self, bits, points):
         """
-        Input: bits (Image), points (ResultPoint [])
+        :param bits: BitMatrix, representing the barcode image matrix.
+        :param points: List[ResultPoint], points of interest in the image.
         """
-        self._bits = bits
-        self._points = points
+        self.bits = bits
+        self.points = points
 
-    @property
-    def bits(self):
+    def get_bits(self):
         """
-        Returns the bit matrix (similar to BitMatrix).
-        :return: The bit matrix.
+        Returns the BitMatrix containing the barcode.
         """
-        return self._bits  # Image numpy array
+        return self.bits
 
-    @property
-    def points(self):
+    def get_points(self):
         """
-        Returns the result points (similar to ResultPoint[]).
-        :return: The result points.
+        Returns the points of interest (e.g., corners or finder patterns).
         """
-        return self._points # ResultPoint
+        return self.points

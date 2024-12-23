@@ -6,7 +6,8 @@ print(FormatException.get_format_instance())
 from decoder import FormatInformation
 from .Version import Version
 from enums import DataMask
-
+from .Version import VersionManager
+from enums.DataMask import DataMask
 class BitMatrixParser:
 
     def __init__(self, bit_matrix):
@@ -75,7 +76,7 @@ class BitMatrixParser:
 
         provisional_version = (dimension - 17) // 4
         if provisional_version <= 6:
-            return Version.get_version_for_number(provisional_version)
+            return VersionManager.get_version_for_number(provisional_version)
 
         # Đọc thông tin phiên bản từ góc trên bên phải
         version_bits = 0
@@ -121,6 +122,16 @@ class BitMatrixParser:
         - Output: Trả về mảng byte chứa codewords của QR Code.
         - Nếu không đọc đúng số byte mong muốn, sẽ ném ra ngoại lệ FormatException.
         """
+        DATA_MASKS = {
+            0: DataMask000,
+            1: DataMask001,
+            2: DataMask010,
+            3: DataMask011,
+            4: DataMask100,
+            5: DataMask101,
+            6: DataMask110,
+            7: DataMask111,
+        }
         format_info = self.read_format_information()
         version = self.read_version()
 

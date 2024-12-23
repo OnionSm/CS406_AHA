@@ -18,15 +18,15 @@ class FinderPattern(ResultPoint):
         return self.count
 
     def about_equals(self, module_size, i, j):
-        if abs(i - self.y) <= module_size and abs(j - self.x) <= module_size:
+        if abs(i - self.get_y()) <= module_size and abs(j - self.get_x()) <= module_size:
             module_size_diff = abs(module_size - self.estimated_module_size)
             return module_size_diff <= 1.0 or module_size_diff <= self.estimated_module_size
         return False
 
     def combine_estimate(self, i, j, new_module_size):
         combined_count = self.count + 1
-        combined_x = (self.count * self.x + j) / combined_count
-        combined_y = (self.count * self.y + i) / combined_count
+        combined_x = (self.count * self.get_x() + j) / combined_count
+        combined_y = (self.count * self.get_y() + i) / combined_count
         combined_module_size = (self.count * self.estimated_module_size + new_module_size) / combined_count
         return FinderPattern(combined_x, combined_y, combined_module_size, combined_count)
     

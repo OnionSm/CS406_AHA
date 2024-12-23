@@ -97,39 +97,7 @@ class Version:
     def get_ec_blocks_for_level(self, ec_level):
         return self.ec_blocks[ec_level.value]  # Assuming ECLevel is an enum
 
-    @staticmethod
-    def getProvisionalVersionForDimension(dimension):
-        if dimension % 4 != 1:
-            raise FormatException.getFormatInstance()
-
-        try:
-            return Version.getVersionForNumber((dimension - 17) // 4)
-        except ValueError:
-            raise FormatException.getFormatInstance()
-
-    # @staticmethod
-    # def get_version_for_number(versionNumber):
-    #     if versionNumber < 1 or versionNumber > 40:
-    #         raise ValueError("Invalid version number")
-    #     return Version.VERSIONS[versionNumber - 1]
     
-    @staticmethod
-    def decode_version_information(version_bits):
-        best_difference = float('inf')
-        best_version = 0
-        version_amount = len(Version.VERSION_DECODE_INFOR)
-        for i in range(0, version_amount):
-            target_version = Version.VERSION_DECODE_INFO[i]
-            if target_version == version_bits:
-                return Version.get_version_for_number(i+7)
-            bits_difference = FormatInformation.num_bits_differing(version_bits, target_version)
-            if bits_difference < best_difference:
-                best_version = i + 7
-                best_difference = bits_difference
-            
-        if best_difference <= 3:
-            return Version.get_version_for_number(best_version)
-        return None
 
     def build_function_pattern(self):
         """
@@ -414,7 +382,36 @@ class VersionManager:
         pass 
 
     @staticmethod
-    def get_version_for_number(versionNumber):
-        if versionNumber < 1 or versionNumber > 40:
+    def get_version_for_number(version_number):
+        if version_number < 1 or version_number > 40:
             raise ValueError("Invalid version number")
-        return Version.VERSIONS[versionNumber - 1]
+        return VersionManager.VERSIONS[version_number - 1]
+    
+    @staticmethod
+    def get_provisional_version_for_dimension(dimension): 
+        if dimension % 4 != 1:
+            raise FormatException()
+
+        try:
+            return VersionManager.get_version_for_number((dimension - 17) // 4)
+        except ValueError:
+            raise FormatException.getFormatInstance()
+        
+    @staticmethod
+    def decode_version_information(version_bits):
+        best_difference = float('inf')
+        best_version = 0
+        version_amount = len(Version.VERSION_DECODE_INFOR)
+        for i in range(0, version_amount):
+            target_version = Version.VERSION_DECODE_INFO[i]
+            if target_version == version_bits:
+                return VersionManager.getVersionForNumber(i+7)
+            bits_difference = FormatInformation.num_bits_differing(version_bits, target_version)
+            if bits_difference < best_difference:
+                best_version = i + 7
+                best_difference = bits_difference
+            
+        if best_difference <= 3:
+            return VersionManager.getVersionForNumber(best_version)
+        return None
+

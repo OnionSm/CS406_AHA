@@ -70,7 +70,7 @@ class BitMatrix():
             image_row = image[i]
             for j in range(width):
                 if image_row[j]:
-                    bits.set_bit(i, j, 1)  # Đặt bit 1 tại vị trí (i, j)
+                    bits.set(i, j)  # Đặt bit 1 tại vị trí (i, j)
         
         return bits
     
