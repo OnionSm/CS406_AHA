@@ -17,3 +17,4 @@ class NotFoundException(Exception):
         self.message = message
         super().__init__(self.message)
 
+
