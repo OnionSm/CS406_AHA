@@ -48,8 +48,6 @@ class Detector:
 
         finder: FinderPatternFinder = FinderPatternFinder(self.image, self.result_point_callback)
         info: FinderPatternInfo = finder.find(hints)
-        if info is None:
-            return None
         return self.process_finder_pattern_info(info)
     
     
@@ -95,7 +93,7 @@ class Detector:
         else:
             points = [bottom_left, top_left, top_right, alignment_pattern]
 
-        return DetectorResult(bits, points) , info
+        return DetectorResult(bits, points) 
 
 
     @staticmethod
