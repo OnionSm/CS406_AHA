@@ -52,6 +52,8 @@ class Detector:
     
     
     def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
+        if info is None:
+            return None
         top_left: FinderPattern = info.get_top_left()
         top_right: FinderPattern = info.get_top_right()
         bottom_left: FinderPattern = info.get_bottom_left()
@@ -60,6 +62,8 @@ class Detector:
             # raise NotFoundException("Module size less than 1")
             return None
         dimension: int = self.compute_dimension(top_left, top_right, bottom_left, module_size)
+        if dimension is None:
+            return None
         provisional_version = Version.VersionManager.get_provisional_version_for_dimension(dimension)
         if provisional_version is None:
             return None
@@ -188,7 +192,8 @@ class Detector:
         elif dimension % 4 == 2:
             dimension -= 1
         elif dimension % 4 == 3:
-            raise NotFoundException()
+            # raise NotFoundException()
+            return None
         
         return dimension
 

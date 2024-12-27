@@ -270,35 +270,81 @@ st.caption("""
 để phát hiện **Finder Pattern** 🔍
 """)
 
-uploaded_file = st.file_uploader("Chọn một file ảnh", type=["jpg", "jpeg", "png"])
+# uploaded_file = st.file_uploader("Chọn một file ảnh", type=["jpg", "jpeg", "png"])
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+# if uploaded_file is not None:
+#     image = Image.open(uploaded_file)
 
-    st.image(image, caption="Ảnh đã tải lên", width=200)
+#     st.image(image, caption="Ảnh đã tải lên", width=200)
 
-    image = np.array(image)
-    if image.shape[2] == 4: 
-        image = image[:, :, :3]  
+#     image = np.array(image)
+#     if image.shape[2] == 4: 
+#         image = image[:, :, :3]  
 
-    detected_images, cropped_images = localization_image(image)
-    for row in range(len(cropped_images)):
-        res_data = handle_img(cropped_images[row], selected_option)
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.image(detected_images[row], caption="Localization", use_container_width=True)
-        col2.image(cropped_images[row], caption="Crop Image", use_container_width=True)
-        col3.image(res_data["binary_image"], caption= "Binary Image", use_container_width=True)
-        if "qr_code" in res_data and res_data["qr_code"] is not None: 
-            col4.image(res_data["qr_code"], caption= "QR Code", use_container_width=True)
-            if "data" in res_data and res_data["data"] is not None:
-                col5.markdown(
-                    f'<div style="display: flex; justify-content: center; align-items: center; height: 100%;">'
-                    f'<p style="font-size: 20px; color: red; text-align: center;">{res_data["data"]}</p>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-        else:
-            col5.write("Không thể nhận dạng QR Code")
+#     detected_images, cropped_images = localization_image(image)
+#     for row in range(len(cropped_images)):
+#         res_data = handle_img(cropped_images[row], selected_option)
+#         col1, col2, col3, col4, col5 = st.columns(5)
+#         col1.image(detected_images[row], caption="Localization", use_container_width=True)
+#         col2.image(cropped_images[row], caption="Crop Image", use_container_width=True)
+#         col3.image(res_data["binary_image"], caption= "Binary Image", use_container_width=True)
+#         if "qr_code" in res_data and res_data["qr_code"] is not None: 
+#             col4.image(res_data["qr_code"], caption= "QR Code", use_container_width=True)
+#             if "data" in res_data and res_data["data"] is not None:
+#                 col5.markdown(
+#                     f'<div style="display: flex; justify-content: center; align-items: center; height: 100%;">'
+#                     f'<p style="font-size: 20px; color: red; text-align: center;">{res_data["data"]}</p>'
+#                     '</div>',
+#                     unsafe_allow_html=True
+#                 )
+#         else:
+#             col5.write("Không thể nhận dạng QR Code")
             
+# else:
+#     st.write("Chưa có ảnh nào được tải lên.")
+
+# Tải lên nhiều file ảnh
+uploaded_files = st.file_uploader("Chọn một hoặc nhiều file ảnh", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        # Mở từng ảnh
+        image = Image.open(uploaded_file)
+
+        st.image(image, caption=f"Ảnh đã tải lên: {uploaded_file.name}", width=200)
+        st.write(f"Tên file: {uploaded_file.name}")
+
+        # Chuyển đổi ảnh thành numpy array
+        image = np.array(image)
+
+        # Kiểm tra nếu ảnh có 4 kênh (RGBA), loại bỏ kênh alpha
+        if image.shape[2] == 4: 
+            image = image[:, :, :3]  
+
+        # Gọi hàm xử lý ảnh
+        detected_images, cropped_images = localization_image(image)
+        for row in range(len(cropped_images)):
+            res_data = handle_img(cropped_images[row], selected_option)
+            
+            # Hiển thị ảnh với các kết quả
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.image(detected_images[row], caption="Localization", use_container_width=True)
+            col2.image(cropped_images[row], caption="Crop Image", use_container_width=True)
+            col3.image(res_data["binary_image"], caption="Binary Image", use_container_width=True)
+            
+            # Hiển thị QR Code nếu có
+            if "qr_code" in res_data and res_data["qr_code"] is not None:
+                col4.image(res_data["qr_code"], caption="QR Code", use_container_width=True)
+                
+                # Hiển thị dữ liệu nếu có
+                if "data" in res_data and res_data["data"] is not None:
+                    col5.markdown(
+                        f'<div style="display: flex; justify-content: center; align-items: center; height: 100%;">'
+                        f'<p style="font-size: 20px; color: red; text-align: center;">{res_data["data"]}</p>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )   
+            else:
+                col5.write("Không thể nhận dạng QR Code")
 else:
     st.write("Chưa có ảnh nào được tải lên.")
