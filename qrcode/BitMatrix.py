@@ -572,3 +572,15 @@ class BitMatrix():
         """
         return BitMatrix(self.width, self.height, self.row_size, self.bits[:])
 
+    def bitmatrix_to_image(self):
+        img = []
+        for y in range(self.get_height()):
+            row = []
+            for x in range(self.get_width()):
+                row.append(1 - np.uint8(self.get(x, y)))
+            img.append(row)
+        img = np.array(img, dtype=np.uint8)
+        # print(self.get_width())
+        # print(self.get_height())
+        # print("First bits", self.bits[0])
+        return img

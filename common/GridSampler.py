@@ -44,67 +44,67 @@ class GridSampler:
         """
         raise NotImplementedError("Phương thức này cần được triển khai trong lớp con.")
 
-    @staticmethod
-    def check_and_nudge_points(image, points):
-        """
-        Input: 
-        - image: BitMatrix
-        - points: float []  
-        """
-        width = image.get_width()
-        height = image.get_height()
-        
-        # Check and nudge points from start until we see some that are OK:
-        nudged = True
-        max_offset = len(points) - 1  # points length must be even
-        offset = 0
-
-        while offset < max_offset and nudged:
-            x = int(points[offset])
-            y = int(points[offset + 1])
-            if x < -1 or x > width or y < -1 or y > height:
-                raise Exception("NotFoundException")
-            
-            nudged = False
-            if x == -1:
-                points[offset] = 0.0
-                nudged = True
-            elif x == width:
-                points[offset] = width - 1
-                nudged = True
-
-            if y == -1:
-                points[offset + 1] = 0.0
-                nudged = True
-            elif y == height:
-                points[offset + 1] = height - 1
-                nudged = True
-
-            offset += 2
-
-        # Check and nudge points from end:
-        nudged = True
-        offset = len(points) - 2
-
-        while offset >= 0 and nudged:
-            x = int(points[offset])
-            y = int(points[offset + 1])
-            if x < -1 or x > width or y < -1 or y > height:
-                raise Exception("NotFoundException")
-            
-            nudged = False
-            if x == -1:
-                points[offset] = 0.0
-                nudged = True
-            elif x == width:
-                points[offset] = width - 1
-                nudged = True
-
-            if y == -1:
-                points[offset + 1] = 0.0
-                nudged = True
-            elif y == height:
-                points[offset + 1] = height - 1
-                nudged = True
-
-            offset -= 2
+    # @staticmethod
+    # def check_and_nudge_points(image, points):
+    #     """
+    #     Input:
+    #     - image: BitMatrix
+    #     - points: float []
+    #     """
+    #     width = image.get_width()
+    #     height = image.get_height()
+    #
+    #     # Check and nudge points from start until we see some that are OK:
+    #     nudged = True
+    #     max_offset = len(points) - 1  # points length must be even
+    #     offset = 0
+    #
+    #     while offset < max_offset and nudged:
+    #         x = int(points[offset])
+    #         y = int(points[offset + 1])
+    #         if x < -1 or x > width or y < -1 or y > height:
+    #             raise Exception("NotFoundException")
+    #
+    #         nudged = False
+    #         if x == -1:
+    #             points[offset] = 0.0
+    #             nudged = True
+    #         elif x == width:
+    #             points[offset] = width - 1
+    #             nudged = True
+    #
+    #         if y == -1:
+    #             points[offset + 1] = 0.0
+    #             nudged = True
+    #         elif y == height:
+    #             points[offset + 1] = height - 1
+    #             nudged = True
+    #
+    #         offset += 2
+    #
+    #     # Check and nudge points from end:
+    #     nudged = True
+    #     offset = len(points) - 2
+    #
+    #     while offset >= 0 and nudged:
+    #         x = int(points[offset])
+    #         y = int(points[offset + 1])
+    #         if x < -1 or x > width or y < -1 or y > height:
+    #             raise Exception("NotFoundException")
+    #
+    #         nudged = False
+    #         if x == -1:
+    #             points[offset] = 0.0
+    #             nudged = True
+    #         elif x == width:
+    #             points[offset] = width - 1
+    #             nudged = True
+    #
+    #         if y == -1:
+    #             points[offset + 1] = 0.0
+    #             nudged = True
+    #         elif y == height:
+    #             points[offset + 1] = height - 1
+    #             nudged = True
+    #
+    #         offset -= 2

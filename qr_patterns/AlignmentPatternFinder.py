@@ -31,8 +31,6 @@ class AlignmentPatternFinder:
         max_j = start_x + self.width
         middle_i = self.start_y + (height // 2)
         state_count = [0, 0, 0]
-        print("start x:", start_x)
-
         for iGen in range(height):
             i = middle_i + ((iGen & 0x01) == 0 and (iGen + 1) // 2 or -((iGen + 1) // 2))
             state_count = [0, 0, 0]
@@ -50,7 +48,6 @@ class AlignmentPatternFinder:
                     else:
                         if current_state == 2: # have full state
                             if self.found_pattern_cross(state_count):
-                                print("Aligment Found")
                                 confirmed = self.handle_possible_center(state_count, i, j)
                                 if confirmed is not None:
                                     return confirmed
@@ -70,7 +67,6 @@ class AlignmentPatternFinder:
                 confirmed = self.handle_possible_center(state_count, i, max_j)
                 if confirmed:
                     return confirmed
-        print("State", state_count)
         if len(self.possibleCenters) > 0:
             return self.possibleCenters[0]
         raise ValueError("Not Found")
@@ -135,7 +131,6 @@ class AlignmentPatternFinder:
         for center in self.possibleCenters:
             if center.aboutEquals(estimated_module_size, center_i, center_j):
                 return center.combineEstimate(center_i, center_j, estimated_module_size)
-        print("Aligment point", center_j, center_i, estimated_module_size)
         point = AlignmentPattern(center_j, center_i, estimated_module_size)
         self.possibleCenters.append(point)
         if self.resultPointCallback:

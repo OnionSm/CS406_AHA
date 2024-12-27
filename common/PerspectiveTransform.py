@@ -55,7 +55,7 @@ class PerspectiveTransform:
             dy2 = y3 - y2
             denominator = dx1 * dy2 - dx2 * dy1
             a13 = (dx3 * dy2 - dx2 * dy3) / denominator
-            a23 = (dx1 * dy3 - dx3 * dy1) / denominator
+            a23 = (dx1 * dy3 - dx3 * dy1) / denominator 
             return PerspectiveTransform(
                 x1 - x0 + a13 * x1, x3 - x0 + a23 * x3, x0,
                 y1 - y0 + a13 * y1, y3 - y0 + a23 * y3, y0,
