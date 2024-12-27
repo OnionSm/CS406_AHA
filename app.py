@@ -164,16 +164,8 @@ def handle_img_solution_1(img_crop):
     binary_img = binary_img * 255
     result["binary_image"] = binary_img 
     reader = QRCodeReader()
-    res, info = reader.decode(bitmap)
+    res = reader.decode(bitmap)
     if res is not None and res.get_bits() is not None:
-        tl = info.get_top_left()
-        tr = info.get_top_right()
-        bl = info.get_bottom_left()
-        img_crop_2 = img_crop.copy()
-        cv2.circle(img_crop_2, (int(tl.get_x()), int(tl.get_y())), radius=5, color=(255, 0, 0), thickness=-1) 
-        cv2.circle(img_crop_2, (int(tr.get_x()), int(tr.get_y())), radius=5, color=(255, 0, 0), thickness=-1) 
-        cv2.circle(img_crop_2, (int(bl.get_x()), int(bl.get_y())), radius=5, color=(255, 0, 0), thickness=-1)  
-        result["finder_pattern"] = img_crop_2
         img_result = res.bits.bitmatrix_to_image()
         high_res_img = cv2.resize(img_result, None, fx=100, fy=100, interpolation=cv2.INTER_AREA)
         high_res_img = high_res_img * 255
@@ -224,17 +216,9 @@ def handle_img_solution_2(img):
         print(top_right.get_x(),top_right.get_y())
         print(bottom_left.get_x(), bottom_left.get_y())
         reader = QRCodeReader()
-        res, info = reader.decode2(bitmap ,finder_pattern_info)
+        res = reader.decode2(bitmap ,finder_pattern_info)
         if res is not None:
             if res.get_bits() is not None:
-                tl = info.get_top_left()
-                tr = info.get_top_right()
-                bl = info.get_bottom_left()
-                img_crop_2 = img.copy()
-                cv2.circle(img_crop_2, (int(tl.get_x()), int(tl.get_y())), radius=5, color=(255, 0, 0), thickness=-1) 
-                cv2.circle(img_crop_2, (int(tr.get_x()), int(tr.get_y())), radius=5, color=(255, 0, 0), thickness=-1) 
-                cv2.circle(img_crop_2, (int(bl.get_x()), int(bl.get_y())), radius=5, color=(255, 0, 0), thickness=-1)  
-                result["finder_pattern"] = img_crop_2
                 img_result = res.get_bits().bitmatrix_to_image()
                 high_res_img = cv2.resize(img_result, None, fx=100, fy=100, interpolation=cv2.INTER_AREA)
                 high_res_img = high_res_img * 255
@@ -300,23 +284,21 @@ if uploaded_file is not None:
     detected_images, cropped_images = localization_image(image)
     for row in range(len(cropped_images)):
         res_data = handle_img(cropped_images[row], selected_option)
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        col1, col2, col3, col4, col5 = st.columns(5)
         col1.image(detected_images[row], caption="Localization", use_container_width=True)
         col2.image(cropped_images[row], caption="Crop Image", use_container_width=True)
         col3.image(res_data["binary_image"], caption= "Binary Image", use_container_width=True)
-        if "finder_pattern" in res_data:
-            col4.image(res_data["finder_pattern"], caption= "Finder Pattern", use_container_width=True)
         if "qr_code" in res_data and res_data["qr_code"] is not None: 
-            col5.image(res_data["qr_code"], caption= "QR Code", use_container_width=True)
+            col4.image(res_data["qr_code"], caption= "QR Code", use_container_width=True)
             if "data" in res_data and res_data["data"] is not None:
-                col6.markdown(
+                col5.markdown(
                     f'<div style="display: flex; justify-content: center; align-items: center; height: 100%;">'
                     f'<p style="font-size: 20px; color: red; text-align: center;">{res_data["data"]}</p>'
                     '</div>',
                     unsafe_allow_html=True
                 )
         else:
-            col6.write("Không thể nhận dạng QR Code")
+            col5.write("Không thể nhận dạng QR Code")
             
 else:
     st.write("Chưa có ảnh nào được tải lên.")

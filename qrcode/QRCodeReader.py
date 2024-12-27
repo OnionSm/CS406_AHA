@@ -44,12 +44,12 @@ class QRCodeReader:
             decoder_result = self.decoder.decode(bits, hints)
             points = self.NO_POINTS
         else:
-            detector_result ,  info  = Detector(image.get_black_matrix()).detect(hints)
-            return detector_result, info
+            detector_result  = Detector(image.get_black_matrix()).detect(hints)
+            return detector_result
         
     def decode2(self, image:BinaryBitmap, finder_pattern_info):
-        detector_result, info = Detector(image.get_black_matrix()).process_finder_pattern_info(finder_pattern_info)
-        return detector_result, info
+        detector_result = Detector(image.get_black_matrix()).process_finder_pattern_info(finder_pattern_info)
+        return detector_result
     
     def reset(self):
         """
