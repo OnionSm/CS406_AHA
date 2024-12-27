@@ -395,7 +395,8 @@ class VersionManager:
         try:
             return VersionManager.get_version_for_number((dimension - 17) // 4)
         except ValueError:
-            raise FormatException.getFormatInstance()
+            # raise FormatException.getFormatInstance()
+            return None
         
     @staticmethod
     def decode_version_information(version_bits):
