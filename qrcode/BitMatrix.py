@@ -580,7 +580,4 @@ class BitMatrix():
                 row.append(1 - np.uint8(self.get(x, y)))
             img.append(row)
         img = np.array(img, dtype=np.uint8)
-        # print(self.get_width())
-        # print(self.get_height())
-        # print("First bits", self.bits[0])
         return img

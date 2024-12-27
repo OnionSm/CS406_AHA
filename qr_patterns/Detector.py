@@ -48,7 +48,10 @@ class Detector:
 
         finder: FinderPatternFinder = FinderPatternFinder(self.image, self.result_point_callback)
         info: FinderPatternInfo = finder.find(hints)
+        if info is None:
+            return None
         return self.process_finder_pattern_info(info)
+    
     
     def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
         top_left: FinderPattern = info.get_top_left()
@@ -56,19 +59,19 @@ class Detector:
         bottom_left: FinderPattern = info.get_bottom_left()
         module_size = self.calculate_module_size(top_left, top_right, bottom_left)
         if module_size < 1.0:
-            raise NotFoundException("Module size less than 1")
+            # raise NotFoundException("Module size less than 1")
+            return None
         dimension: int = self.compute_dimension(top_left, top_right, bottom_left, module_size)
         provisional_version = Version.VersionManager.get_provisional_version_for_dimension(dimension)
+        if provisional_version is None:
+            return None
         module_between_fp_centers = provisional_version.get_dimension_for_version() - 7
         
         alignment_pattern = None 
         if len(provisional_version.get_alignment_pattern_centers()) > 0:
-            # Guess where a "bottom right" finder pattern would have been
             bottom_right_x = top_right.get_x() - top_left.get_x() + bottom_left.get_x()
             bottom_right_y = top_right.get_y() - top_left.get_y() + bottom_left.get_y()
 
-            # Estimate that alignment pattern is closer by 3 modules
-            # from "bottom right" to known top left location
             correction_to_top_left = 1.0 - 3.0 / module_between_fp_centers
             estimate_alignment_x = int(top_left.get_x() + correction_to_top_left * (bottom_right_x - top_left.get_x()))
             estimate_alignment_y = int(top_left.get_y() + correction_to_top_left * (bottom_right_y - top_left.get_y()))
@@ -82,16 +85,17 @@ class Detector:
                                                                 i)
                     break
                 except NotFoundException:
-                    # Try next round
-                    i <<= 1  # Equivalent to i *= 2
+                    i <<= 1  
         transform: PerspectiveTransform = Detector.create_transform(top_left, top_right, bottom_left, alignment_pattern, dimension)
+        if transform is None:
+            return None
         bits: BitMatrix = Detector.sample_grid(self.image, transform, dimension)
         if alignment_pattern is None:
             points = [bottom_left, top_left, top_right]
         else:
             points = [bottom_left, top_left, top_right, alignment_pattern]
 
-        return DetectorResult(bits, points)
+        return DetectorResult(bits, points) , info
 
 
     @staticmethod

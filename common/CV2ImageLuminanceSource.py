@@ -54,8 +54,9 @@ class CV2ImageLuminanceSource(LuminanceSource):
         if row is None or len(row) < self.width:
             row = bytearray(self.width)
 
-        # Lấy dữ liệu pixel từ hình ảnh
-        row[:] = np.array(self.image.getdata(self.width * y, self.width), dtype=np.uint8)
+        # # Lấy dữ liệu pixel từ hình ảnh
+        # row[:] = np.array(self.image.getdata(self.width * y, self.width), dtype=np.uint8)
+        row[:] = self.image[y, :self.width].astype(np.uint8)
         
         return row
 

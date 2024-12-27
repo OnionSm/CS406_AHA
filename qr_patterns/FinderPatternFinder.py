@@ -144,8 +144,10 @@ class FinderPatternFinder:
             i += i_skip
 
         pattern_info = self.select_best_patterns()
-        ResultPoint.order_best_patterns(pattern_info)
+        if pattern_info is None:
+            return None
 
+        ResultPoint.order_best_patterns(pattern_info)
         return FinderPatternInfo(pattern_info)
 
     @staticmethod
@@ -431,8 +433,9 @@ class FinderPatternFinder:
     def select_best_patterns(self):
         start_size = len(self.possible_centers)
         if start_size < 3:
-            raise FinderPatternNotFoundException("Not enough finder patterns found.")
-
+            # raise FinderPatternNotFoundException("Not enough finder patterns found.")
+            print("Not enough finder patterns found.")
+            return None
         # Remove patterns that don't meet the count threshold
         # Lọc các FinderPattern có `get_count()` >= CENTER_QUORUM
         self.possible_centers = [fp for fp in self.possible_centers if fp.get_count() >= self.CENTER_QUORUM]
@@ -486,8 +489,9 @@ class FinderPatternFinder:
                         best_patterns = [fpi, fpj, fpk]
 
         if distortion == float('inf'):
-            raise FinderPatternNotFoundException("No suitable patterns found.")
-
+            # raise FinderPatternNotFoundException("No suitable patterns found.")
+            print("No suitable patterns found")
+            return None
         return best_patterns
 
     @staticmethod

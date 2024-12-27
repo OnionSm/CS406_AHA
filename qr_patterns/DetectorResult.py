@@ -1,7 +1,7 @@
 import sys 
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
+from qrcode import BitMatrix
 
 
 class DetectorResult:
@@ -16,7 +16,7 @@ class DetectorResult:
         :param bits: BitMatrix, representing the barcode image matrix.
         :param points: List[ResultPoint], points of interest in the image.
         """
-        self.bits = bits
+        self.bits:BitMatrix  = bits
         self.points = points
 
     def get_bits(self):

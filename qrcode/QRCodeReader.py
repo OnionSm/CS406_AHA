@@ -3,9 +3,10 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from decoder import Decoder
 from enums import DecodeHintType, ResultMetadataType, BarcodeFormat
-from qr_patterns import Detector, DetectorResult
+from qr_patterns import Detector, DetectorResult, FinderPatternInfo
 from qrcode import Result, QRCodeDecoderMetaData, BitMatrix, BinaryBitmap
 from exceptions import NotFoundException
+
 
 class QRCodeReader:
     """
@@ -43,12 +44,12 @@ class QRCodeReader:
             decoder_result = self.decoder.decode(bits, hints)
             points = self.NO_POINTS
         else:
-            detector_result:DetectorResult = Detector(image.get_black_matrix()).detect(hints)
-            return detector_result
+            detector_result ,  info  = Detector(image.get_black_matrix()).detect(hints)
+            return detector_result, info
         
     def decode2(self, image:BinaryBitmap, finder_pattern_info):
-        detector_result:DetectorResult = Detector(image.get_black_matrix()).process_finder_pattern_info(finder_pattern_info)
-        return detector_result
+        detector_result, info = Detector(image.get_black_matrix()).process_finder_pattern_info(finder_pattern_info)
+        return detector_result, info
     
     def reset(self):
         """
