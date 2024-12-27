@@ -9,21 +9,19 @@ from .ResultPoint import ResultPoint
 from qrcode import Version, BitMatrix
 from .AlignmentPattern import AlignmentPattern
 from .AlignmentPatternFinder import AlignmentPatternFinder
-from interfaces import ResultPointCallback
-from common import PerspectiveTransform, DefaultGridSampler, GridSampler
-from common import GridSampler
 from exceptions import FormatException, NotFoundException
 from .FinderPatternInfo import FinderPatternInfo
 from .FinderPattern import FinderPattern
-
-
+from common.PerspectiveTransform import PerspectiveTransform
+from common.GridSampler import GridSampler
+from common.DefaultGridSampler import DefaultGridSampler
 from enums import DecodeHintType
 
 
     
 
 
-class Detector():
+class Detector:
     def __init__(self, image):
         """
         Property: 
@@ -50,12 +48,6 @@ class Detector():
 
         finder: FinderPatternFinder = FinderPatternFinder(self.image, self.result_point_callback)
         info: FinderPatternInfo = finder.find(hints)
-        top_left: FinderPattern = info.get_top_left()
-        top_right: FinderPattern = info.get_top_right()
-        bottom_left: FinderPattern = info.get_bottom_left()
-        print("top_left", top_left)
-        print("top_right", top_right)
-        print("bottom_left", bottom_left)
         return self.process_finder_pattern_info(info)
     
     def process_finder_pattern_info(self, info): # info (FinderPatternInfo)
@@ -63,7 +55,6 @@ class Detector():
         top_right: FinderPattern = info.get_top_right()
         bottom_left: FinderPattern = info.get_bottom_left()
         module_size = self.calculate_module_size(top_left, top_right, bottom_left)
-        print("FINAL MODULE SIZE", module_size)
         if module_size < 1.0:
             raise NotFoundException("Module size less than 1")
         dimension: int = self.compute_dimension(top_left, top_right, bottom_left, module_size)
@@ -94,7 +85,7 @@ class Detector():
                     # Try next round
                     i <<= 1  # Equivalent to i *= 2
         transform: PerspectiveTransform = Detector.create_transform(top_left, top_right, bottom_left, alignment_pattern, dimension)
-        bits = self.sample_grid(self.image, transform, dimension)
+        bits: BitMatrix = Detector.sample_grid(self.image, transform, dimension)
         if alignment_pattern is None:
             points = [bottom_left, top_left, top_right]
         else:
@@ -138,6 +129,7 @@ class Detector():
             source_bottom_right_y,
             3.5,
             dim_minus_three,
+            
             top_left.get_x(),
             top_left.get_y(),
             top_right.get_x(),
@@ -161,10 +153,13 @@ class Detector():
         """
         try:
             # sampler = GridSampler.get_instance()
-            sampler:GridSampler = DefaultGridSampler()
-            return sampler.sample_grid(image, dimension, dimension, transform)
+            # sampler = DefaultGridSampler()
+            # print(type(sampler))
+            print("Transform", transform)
+            return DefaultGridSampler.sample_grid(image, dimension, dimension, transform)
         except Exception as e:
-            raise NotFoundException("Sample grid failed") from e
+            # raise NotFoundException("Sample grid failed") from e
+            return None
 
     @staticmethod
     def compute_dimension(top_left, top_right, bottom_left, module_size):
@@ -178,12 +173,9 @@ class Detector():
         và top_left với bottom_left sau đó lấy trung bình 2 khoảng cách và cộng thêm 7
         để ra số module của QR code
         """
-        print("Module size ", module_size )
         # Tính khoảng cách giữa các điểm và chia cho kích thước module
         tltr_centers_dimension = round(ResultPoint.distance(top_left, top_right) / module_size)
         tlbl_centers_dimension = round(ResultPoint.distance(top_left, bottom_left) / module_size)
-        print("tltr_centers_dimension", tltr_centers_dimension)
-        print("tlbl_centers_dimension", tlbl_centers_dimension)
 
         
         # Tính toán dimension
@@ -237,12 +229,10 @@ class Detector():
             trung bình của hai ước tính, chia cho 14, để phù hợp với cấu trúc của mẫu gồm nhiều module đen và trắng. 
             Phương pháp này giúp cải thiện độ chính xác trong việc tính toán kích thước module khi xem xét các góc độ khác nhau.
         """
-        print("point "  , pattern.get_x(), pattern.get_y() , other_pattern.get_x(), other_pattern.get_y())
         module_size_est_1 = self.size_of_black_white_black_run_both_ways(
             int(pattern.get_x()), int(pattern.get_y()), int(other_pattern.get_x()), int(other_pattern.get_y()))
         module_size_est_2 = self.size_of_black_white_black_run_both_ways(
             int(other_pattern.get_x()), int(other_pattern.get_y()), int(pattern.get_x()), int(pattern.get_y()))
-        print(module_size_est_1, module_size_est_2)
         if math.isnan(module_size_est_1):
             return module_size_est_2 / 7.0
         if math.isnan(module_size_est_2):
@@ -261,7 +251,6 @@ class Detector():
         có thể đi qua các pixel biên của ảnh.
         """
         result = self.size_of_black_white_black_run(from_x, from_y, to_x, to_y)
-        print('Result -----',result)
         scale = 1.0 
         # Tính điểm other_to_x, bằng cách lấy đối xứng với to_x thông qua from_x
         # Other_to_x sẽ được giới hạn trong khoảng width
@@ -294,7 +283,6 @@ class Detector():
         Hàm này được sử dụng để trả về khoảng cách của 2 điểm (from_x, from_y) và (to_x, to_y)
         nếu như tìm thấy đoạn black-white-black
         """
-        print("From", from_x, from_y, to_x, to_y)
         # Biến thể nhẹ của thuật toán Bresenham
         steep = abs(to_y - from_y) > abs(to_x - from_x)
         if steep:
@@ -327,7 +315,6 @@ class Detector():
         # Nếu tìm thấy đoạn black-white-black, trả về khoảng cách đến điểm cuối
         if state == 2:
             return math.dist((to_x + xstep, to_y), (from_x, from_y))
-        print("Nannnnnnn")
         # Nếu không tìm thấy đoạn black-white-black, trả về NaN
         return float('nan')
         
@@ -355,11 +342,6 @@ class Detector():
         
         if alignment_area_bottom_y - alignment_area_top_y < overall_est_module_size * 3:
             raise NotFoundException()
-        print("aligment_area_left_x", alignment_area_left_x)
-        print("aligment_area_top_y", alignment_area_top_y)
-        print("aligment_area_right_x", alignment_area_right_x)
-        print("aligment_area_bottom_y", alignment_area_bottom_y)
-        print("overall_est_module_size", overall_est_module_size)
         alignment_finder = AlignmentPatternFinder(
             self.image,
             alignment_area_left_x,

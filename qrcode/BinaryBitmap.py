@@ -60,7 +60,6 @@ class BinaryBitmap:
         """
         if self.matrix is None:
             self.matrix = self.binarizer.get_black_matrix()
-        print("end get black matrix")
         return self.matrix
 
     def is_crop_supported(self) -> bool:

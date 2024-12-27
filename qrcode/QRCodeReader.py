@@ -22,51 +22,7 @@ class QRCodeReader:
         Trả về đối tượng giải mã QR code.
         """
         return self.decoder
-
-    # def decode(self, image, hints=None):
-    #     """
-    #     Phát hiện và giải mã QR code trong bức ảnh.
-
-    #     Input:
-    #     - image: đối tượng BinaryBitmap, chứa thông tin ảnh cần giải mã.
-    #     - hints: một từ điển chứa các gợi ý giải mã (tùy chọn).
-
-    #     Hàm này sẽ phát hiện và giải mã QR code trong bức ảnh được truyền vào.
-
-    #     Output:
-    #     - Trả về đối tượng Result chứa kết quả giải mã (nội dung, byte segments, points, thông tin bổ sung).
-    #     """
-    #     decoder_result = None
-    #     points = None
-    #     if hints and DecodeHintType.PURE_BARCODE in hints:
-    #         bits = self.extract_pure_bits(image.get_black_matrix())
-    #         decoder_result = self.decoder.decode(bits, hints)
-    #         points = self.NO_POINTS
-    #     else:
-    #         detector_result = Detector(image.get_black_matrix()).detect(hints)
-    #         decoder_result = self.decoder.decode(detector_result.get_bits(), hints)
-    #         points = detector_result.get_points()
-
-    #     # Nếu mã bị đảo ngược, hoán đổi điểm dưới trái và trên phải
-    #     if isinstance(decoder_result.get_other(), QRCodeDecoderMetaData):
-    #         decoder_result.get_other().apply_mirrored_correction(points)
-
-    #     result = Result(decoder_result.get_text(), decoder_result.get_raw_bytes(), points, BarcodeFormat.QR_CODE)
-    #     byte_segments = decoder_result.get_byte_segments()
-    #     if byte_segments:
-    #         result.put_metadata(ResultMetadataType.BYTE_SEGMENTS, byte_segments)
-    #     ec_level = decoder_result.get_ec_level()
-    #     if ec_level:
-    #         result.put_metadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, ec_level)
-    #     if decoder_result.has_structured_append():
-    #         result.put_metadata(ResultMetadataType.STRUCTURED_APPEND_SEQUENCE,
-    #                             decoder_result.get_structured_append_sequence_number())
-    #         result.put_metadata(ResultMetadataType.STRUCTURED_APPEND_PARITY,
-    #                             decoder_result.get_structured_append_parity())
-    #     result.put_metadata(ResultMetadataType.ERRORS_CORRECTED, decoder_result.get_errors_corrected())
-    #     result.put_metadata(ResultMetadataType.SYMBOLOGY_IDENTIFIER, "]Q" + decoder_result.get_symbology_modifier())
-    #     return result
-
+    
     def decode(self, image: BinaryBitmap, hints=None):
         """
         Phát hiện và giải mã QR code trong bức ảnh.
@@ -87,37 +43,13 @@ class QRCodeReader:
             decoder_result = self.decoder.decode(bits, hints)
             points = self.NO_POINTS
         else:
-            print("Detect")
             detector_result:DetectorResult = Detector(image.get_black_matrix()).detect(hints)
-            print(detector_result.get_bits())
-            print(len(detector_result.get_bits().bits))
-            print(detector_result.get_bits().row_size)
-            print(detector_result.get_bits().height)
-            print(type(detector_result.get_bits().bits[0]))
-            # decoder_result = self.decoder._decode(detector_result.get_bits(), hints)
-            # points = detector_result.get_points()
-            # print("POINT", points)
-            
-        # # Nếu mã bị đảo ngược, hoán đổi điểm dưới trái và trên phải
-        # if isinstance(decoder_result.get_other(), QRCodeDecoderMetaData):
-        #     decoder_result.get_other().apply_mirrored_correction(points)
-        #
-        # result = Result(decoder_result.get_text(), decoder_result.get_raw_bytes(), points, BarcodeFormat.QR_CODE)
-        # byte_segments = decoder_result.get_byte_segments()
-        # if byte_segments:
-        #     result.put_metadata(ResultMetadataType.BYTE_SEGMENTS, byte_segments)
-        # ec_level = decoder_result.get_ec_level()
-        # if ec_level:
-        #     result.put_metadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, ec_level)
-        # if decoder_result.has_structured_append():
-        #     result.put_metadata(ResultMetadataType.STRUCTURED_APPEND_SEQUENCE,
-        #                         decoder_result.get_structured_append_sequence_number())
-        #     result.put_metadata(ResultMetadataType.STRUCTURED_APPEND_PARITY,
-        #                         decoder_result.get_structured_append_parity())
-        # result.put_metadata(ResultMetadataType.ERRORS_CORRECTED, decoder_result.get_errors_corrected())
-        # result.put_metadata(ResultMetadataType.SYMBOLOGY_IDENTIFIER, "]Q" + decoder_result.get_symbology_modifier())
-        # return result
-
+            return detector_result
+        
+    def decode2(self, image:BinaryBitmap, finder_pattern_info):
+        detector_result:DetectorResult = Detector(image.get_black_matrix()).process_finder_pattern_info(finder_pattern_info)
+        return detector_result
+    
     def reset(self):
         """
         Hàm này không làm gì cả, không có tác dụng.

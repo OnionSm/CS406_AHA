@@ -357,39 +357,24 @@ class FinderPatternFinder:
                     estimated_module_size = state_count_total / 7.0
                     found = False
 
-                    print("\n\n\nFound point ", center_width, center_height, estimated_module_size)
-
-                    if len(self.possible_centers) > 0:
-                        print(len(self.possible_centers))
-                        print("--------- posible module ----------")
-
 
                     for i in range(0, len(self.possible_centers)):
                         center = self.possible_centers[i]
 
-                        print(center.get_x(), center.get_y(), center.get_estimated_module_size(), center.get_count())
                         #Look for about the same center and module size:
                         if center.about_equals(estimated_module_size, center_height, center_width):
                             self.possible_centers[i] = center.combine_estimate(center_height, center_width, estimated_module_size)
                             found = True
                             break
-                    if len(self.possible_centers) > 0:
-                        print("------- end possible module --------")
-                    
                     if not found:
-                        print('New point ', center_width, center_height, estimated_module_size)
+                    
                         point = FinderPattern(center_width, center_height, estimated_module_size)
                         self.possible_centers.append(point)
 
                         # CALL BACK WILL BE IMPLEMENTED HERE
                     return True
-                print("num point ", len(self.possible_centers))
                 for i in range(0, len(self.possible_centers)):
                     center = self.possible_centers[i]
-
-                    print(center.get_x(), center.get_y(), center.get_estimated_module_size())
-
-                print("\n\n\n")
             return False
         
     def have_multiply_confirmed_centers(self):
