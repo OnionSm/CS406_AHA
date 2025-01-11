@@ -31,7 +31,7 @@ class BitMatrix():
             self.width, self.height = args
             self.row_size = (self.width + 31) // 32
             self.bits = np.zeros(self.row_size * self.height, dtype=np.uint32)
-        
+            
         elif len(args) == 4:
             # Nếu có 4 tham số, gán width, height, row_size và bit
             self.width, self.height, self.row_size, bit = args
